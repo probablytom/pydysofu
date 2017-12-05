@@ -1,6 +1,14 @@
 Genetic improvement:
-  - Work out what the resulting code should look like
-      is it just some kind of regular mutator?
-
-  - Develop skeleton code for genetic improvement implementation
-  - Fill out skeleton code
+	- Work out what the resulting code should look like
+			is it just some kind of regular mutator?
+	
+	- Develop skeleton code for genetic improvement implementation
+	- Fill out skeleton code
+	
+  Implementation notes:
+    When incrementally improving, we need to know the number of trials a method should take before we save the "best version".
+    How do we measure the best version?
+    * We can't run the method multiple times because there's no guarantee that it's pure.
+    * We can cache the results of a function multiple times, except there's no guarantee that it'll return something and so it's hard to measure its output and use that as a metric
+    * We'll need to define some rules about how we choose what the best version of a function in a workflow is, but as of yet I just don't know what that is.
+      (Maybe we just limit ourselves to functions which look a certain way e.g. always returning some kind of metric we can order the mutations by)
