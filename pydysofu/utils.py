@@ -8,6 +8,7 @@ import ast
 
 _reference_syntax_trees = dict()
 
+
 def get_reference_syntax_tree(func):
     if func not in _reference_syntax_trees:
         func_source_lines = inspect.getsourcelines(func)[0]
