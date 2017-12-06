@@ -5,31 +5,12 @@ Core fuzzing functionality.
 import ast
 import copy
 import inspect
-
 from core_fuzzers import identity
-
 from inspect import getmembers
-
 from workflow_transformer import WorkflowTransformer
+from utils import get_reference_syntax_tree
 
-
-_reference_syntax_trees = dict()
 _reference_get_attributes = dict()
-
-
-def get_reference_syntax_tree(func):
-    if func not in _reference_syntax_trees:
-        func_source_lines = inspect.getsourcelines(func)[0]
-
-        global_indentation = len(func_source_lines[0]) - len(func_source_lines[0].strip())
-        for i in range(len(func_source_lines)):
-            func_source_lines[i] = func_source_lines[i][global_indentation - 1:]
-
-        func_source = ''.join(func_source_lines)
-        _reference_syntax_trees[func] = ast.parse(func_source)
-
-    return _reference_syntax_trees[func]
-
 
 def fuzz_function(reference_function, fuzzer=identity, context=None):
     reference_syntax_tree = get_reference_syntax_tree(reference_function)
