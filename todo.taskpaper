@@ -1,8 +1,6 @@
 Genetic improvement:
-	- Fill out skeleton code
   - Write unit tests
-  - Create actual PyDySoFu fuzzer from the more-or-less-complete skeleton code
-  - Work out how to apply the "best" mutator to the function object. Replace its code object?
+  - Make sure current implementation actually works
 
 	
   Implementation notes:
