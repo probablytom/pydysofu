@@ -576,3 +576,28 @@ def remove_random_step(steps, context):
 def duplicate_last_step(steps, context):
     fuzzer = filter_steps(choose_last_step, duplicate_steps)
     return fuzzer(steps, context)
+
+
+# Genetic fuzzer
+
+
+__mutation_history = []  # Global variables will be a problem with many threads
+__trials_undertaken = 0
+
+
+def incrementally_improve(mutator, number_of_trials=10):
+    def __incrementally_improve(steps, context):
+        global __trials_undertaken
+        steps = mutator(steps, context)
+        __mutation_history.append(steps)
+        __trials_undertaken += 1
+
+        # If we've mutated enough times to choose a new default, do so.
+        if (__trials_undertaken % number_of_trials) == 0:
+            # save the "best" mutation as the default.
+            # TODO: work out how to measure "best"...
+            pass
+
+        return steps
+
+    return __incrementally_improve
