@@ -1,9 +1,9 @@
 Genetic improvement:
-	- Work out what the resulting code should look like
-			is it just some kind of regular mutator?
-	
-	- Develop skeleton code for genetic improvement implementation
 	- Fill out skeleton code
+  - Write unit tests
+  - Create actual PyDySoFu fuzzer from the more-or-less-complete skeleton code
+  - Work out how to apply the "best" mutator to the function object. Replace its code object?
+
 	
   Implementation notes:
     When incrementally improving, we need to know the number of trials a method should take before we save the "best version".
@@ -12,3 +12,11 @@ Genetic improvement:
     * We can cache the results of a function multiple times, except there's no guarantee that it'll return something and so it's hard to measure its output and use that as a metric
     * We'll need to define some rules about how we choose what the best version of a function in a workflow is, but as of yet I just don't know what that is.
       (Maybe we just limit ourselves to functions which look a certain way e.g. always returning some kind of metric we can order the mutations by)
+
+    I've tried to sovle this problem with a couple of nested functions and a generator. I've taken this approach because it avoids global variables, so that the entire state of the mutator is kept in the decorator; this means if our mutated function gets passed around and ends up somewhere where PyDySoFu is out of scope, it can still record its own mutations. It's in control!
+    It also means that, if we're mutating multiple functions, we don't get their histories confused.
+
+    A similar problem arose: we need to mutate the steps before their execution, but we can only know whether they were successful *after* their execution!
+    That means that to select the best steps, we need to know how well they performed.
+    We do this by passing a message *back* from a decorator that we apply to the steps. This catches the return value of the function, weighs it against a fitness function, and after a certain number of invocations, sends a message back to the fuzzer --- which is now a generator to maintain state between calls --- to tell it what the best steps so far have been.
+    Only the best steps get fuzzed after this point, meaning that we incrementally improve the steps we're working on (because they're "fitter").
