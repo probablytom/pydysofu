@@ -608,6 +608,8 @@ def incrementally_improve(mutator, fitness_function=lambda x: x, max_trials=10):
                 # Reset the invocation history
                 _.invocation_history = {}
 
+            return result
+
         return _wrapper
 
     def _incrementally_improve_fuzzer(steps, context):
