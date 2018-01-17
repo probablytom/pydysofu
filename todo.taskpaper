@@ -1,7 +1,9 @@
 Genetic improvement:
   - Write unit tests
   - Make sure current implementation actually works
-
+  - Change `_` naming to something readable
+  - Change variables in Namespace to be explicit class variables
+  - Move mechanics of best-gene-selection to `_incrementally_improve_fuzzer`
 	
   Implementation notes:
     When incrementally improving, we need to know the number of trials a method should take before we save the "best version".
