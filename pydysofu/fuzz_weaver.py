@@ -1,12 +1,12 @@
 """
 Core fuzzing functionality.
-@author twsswt
+@author twsswt, probablytom
 """
 import ast
 import copy
 import inspect
 
-from core_fuzzers import identity
+from core_fuzzers import identity, identity_instructions
 
 from inspect import getmembers
 
@@ -58,7 +58,7 @@ def fuzz_clazz(clazz, advice):
     searched for a filter that matches the target (self) object specified in the __getattribute__ call.
 
     :param clazz : the class to fuzz.
-    :param advice : the dictionary of method reference->fuzzer mappings to apply for the class.
+    :param advice : an instance of PyDySoFu.FuzzingAdvice() representing the advice to apply.
     """
 
     if clazz not in _reference_get_attributes:
@@ -77,12 +77,19 @@ def fuzz_clazz(clazz, advice):
                 reference_function = attribute.im_func
                 # Ensure that advice key is unbound method for instance methods.
                 advice_key = getattr(attribute.im_class, attribute.func_name)
-                fuzzer = advice.get(advice_key, identity)
+                fuzzer = advice.get_fuzzer(advice_key)
+                callback = advice.get_callback(advice_key)
 
                 fuzz_function(reference_function, fuzzer, self)
 
                 # Execute the mutated method.
-                return reference_function(self, *args, **kwargs)
+                exec_result = reference_function(self, *args, **kwargs)
+
+                # Run the callback function with the result
+                callback(exec_result)
+
+                # We're done; return.
+                return exec_result
 
             wrap.func_name = attribute.func_name
 
@@ -94,12 +101,19 @@ def fuzz_clazz(clazz, advice):
 
                 reference_function = attribute
                 advice_key = reference_function
-                fuzzer = advice.get(advice_key, identity)
+                fuzzer = advice.get_fuzzer(advice_key)
+                callback = advice.get_callback(advice_key)
 
                 fuzz_function(reference_function, fuzzer)
 
                 # Execute the mutated function.
-                return reference_function(*args, **kwargs)
+                exec_result = reference_function(*args, **kwargs)
+
+                # Run the callback with the result of execution
+                callback(exec_result)
+
+                # We're done; return.
+                return exec_result
 
             return wrap
 

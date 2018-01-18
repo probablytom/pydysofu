@@ -8,7 +8,6 @@ that may be altered by the fuzzer. The context is the method's bound object, or 
 @author twsswt
 """
 
-
 import ast
 import _ast
 from ast import If, While
@@ -21,7 +20,6 @@ import inspect
 
 from .find_lambda import find_lambda_ast
 from .config import pydysofu_random
-
 
 # Logging Machinery
 
@@ -50,10 +48,12 @@ def log_invocation(func):
         fuzzer_invocations[key] = fuzzer_invocations.get(key, 0) + 1
         _fuzzer_invocations_lock.release()
         return func(*args, **kwargs)
+
     return func_wrapper
 
 
 # Identity Fuzzer
+
 
 def identity(steps, context):
     """
@@ -61,29 +61,28 @@ def identity(steps, context):
     """
     return steps
 
-
 # Step Filtering Functions
+
 
 def choose_identity(steps):
     return [(0, len(steps))]
 
 
 def choose_random_steps(n):
-
     def _choose_random_steps(steps):
         if len(steps) <= n:
-            return [(0, len(steps)-1)]
+            return [(0, len(steps) - 1)]
         else:
-            sample_indices = pydysofu_random.sample(range(0, len(steps) - 1), n)
-            return [(i, i+1) for i in sample_indices]
+            sample_indices = pydysofu_random.sample(
+                range(0,
+                      len(steps) - 1), n)
+            return [(i, i + 1) for i in sample_indices]
 
     return _choose_random_steps
 
 
 def choose_last_steps(n, reapply=True):
-
     class _choose_last_steps(object):
-
         def __init__(self, _n, _reapply):
             self.n = _n
             self.reapply = _reapply
@@ -104,7 +103,8 @@ def choose_last_steps(n, reapply=True):
                 return type(steps[begin_index]) is ast.Pass
 
             while total_size < self.n and begin_index >= 0:
-                while (chunk_size() + total_size < self.n or current_step_is_pass()) and begin_index > 0:
+                while (chunk_size() + total_size < self.n
+                       or current_step_is_pass()) and begin_index > 0:
                     begin_index -= 1
 
                 selected.append((begin_index, end_index + 1))
@@ -125,19 +125,22 @@ def choose_last_step(steps):
     return func(steps)
 
 
-_ast_control_structure_types = {ast.For, ast.If, ast.TryExcept, ast.While, ast.Return, ast.FunctionDef}
+_ast_control_structure_types = {
+    ast.For, ast.If, ast.TryExcept, ast.While, ast.Return, ast.FunctionDef
+}
 
 
 def exclude_control_structures(target=_ast_control_structure_types):
-
     def _exclude_control_structures(steps):
         result = list()
         start = 0
-        while start < len(steps) and type(steps[start]) in _ast_control_structure_types & target:
+        while start < len(steps) and type(
+                steps[start]) in _ast_control_structure_types & target:
             start += 1
         end = start
         while end < len(steps):
-            while end < len(steps) and type(steps[end]) not in _ast_control_structure_types & target:
+            while end < len(steps) and type(
+                    steps[end]) not in _ast_control_structure_types & target:
                 end += 1
             result.append((start, end))
             start = end
@@ -152,11 +155,13 @@ def include_control_structures(target=_ast_control_structure_types):
     def _include_control_structures(steps):
         result = list()
         start = 0
-        while start < len(steps) and type(steps[start]) not in _ast_control_structure_types & target:
+        while start < len(steps) and type(
+                steps[start]) not in _ast_control_structure_types & target:
             start += 1
         end = start
         while end < len(steps):
-            while end < len(steps) and type(steps[end]) in _ast_control_structure_types & target:
+            while end < len(steps) and type(
+                    steps[end]) in _ast_control_structure_types & target:
                 end += 1
             result.append((start, end))
             start = end
@@ -171,6 +176,7 @@ def invert(fuzz_filter):
     Inverts the application of the supplied filter.  Note that invert is symmetrical, i.e.
     invert(invert(f)) is f.
     """
+
     def _invert(steps):
         original = fuzz_filter(steps)
         inverted = list()
@@ -193,12 +199,14 @@ def invert(fuzz_filter):
 
 # Composite Fuzzers
 
+
 def filter_context(fuzz_filters=[(lambda context: True, identity)]):
     """
     A composite fuzzer that accepts a sequence of context filter, fuzz operator tuples.  Each context filter must be a
     function that accepts a context and return a boolean value if the filter is satisfied by the context.  The
     associated fuzz operator is applied when the context filter returns True.
     """
+
     def _filter_context(steps, context):
 
         for fuzz_filter, fuzzer in fuzz_filters:
@@ -219,6 +227,7 @@ def filter_steps(fuzz_filter=choose_identity, fuzzer=identity):
      target steps.
     :param fuzzer: the fuzzer to apply to the filtered steps.
     """
+
     def _filter_steps(steps, context):
         regions = fuzz_filter(steps)
 
@@ -297,7 +306,7 @@ def recurse_into_nested_steps(
         fuzzer=identity,
         target_structures={ast.For, ast.TryExcept, ast.While, ast.If},
         min_depth=0,
-        max_depth=2 ** 32):
+        max_depth=2**32):
     """
     A composite fuzzer that applies the supplied fuzzer recursively to bodies of control statements (For, While,
     TryExcept and If).  Recursion is applied at the head, i.e. the fuzzer supplied is applied to the parent block last.
@@ -307,14 +316,19 @@ def recurse_into_nested_steps(
         if depth <= max_depth:
             for step in steps:
                 if type(step) in {ast.For, ast.While} & target_structures:
-                    step.body = _recurse_into_nested_steps(step.body, context, depth + 1)
+                    step.body = _recurse_into_nested_steps(
+                        step.body, context, depth + 1)
                 elif type(step) in {ast.If} & target_structures:
-                    step.body = _recurse_into_nested_steps(step.body, context, depth + 1)
-                    step.orelse = _recurse_into_nested_steps(step.orelse, context, depth + 1)
+                    step.body = _recurse_into_nested_steps(
+                        step.body, context, depth + 1)
+                    step.orelse = _recurse_into_nested_steps(
+                        step.orelse, context, depth + 1)
                 elif type(step) in {ast.TryExcept} & target_structures:
-                    step.body = _recurse_into_nested_steps(step.body, context, depth + 1)
+                    step.body = _recurse_into_nested_steps(
+                        step.body, context, depth + 1)
                     for handler in step.handlers:
-                        _recurse_into_nested_steps(handler.body, context, depth + 1)
+                        _recurse_into_nested_steps(handler.body, context,
+                                                   depth + 1)
         if depth >= min_depth:
             return fuzzer(steps, context)
         else:
@@ -324,6 +338,7 @@ def recurse_into_nested_steps(
 
 
 # Atomic Fuzzers
+
 
 def replace_condition_with(condition=False):
     """
@@ -353,15 +368,15 @@ def replace_condition_with(condition=False):
                 if condition.func_name == '<lambda>':
 
                     containing_string = inspect.getsource(condition).strip()
-                    func_ast = find_lambda_ast(containing_string, condition).value
+                    func_ast = find_lambda_ast(containing_string,
+                                               condition).value
 
                 else:
                     func_ast = ast.Name(
                         id=condition.func_name,
                         lineno=step.lineno,
                         col_offset=step.col_offset,
-                        ctx=ast.Load()
-                    )
+                        ctx=ast.Load())
 
             else:
                 # TODO be able to call an object.
@@ -369,18 +384,21 @@ def replace_condition_with(condition=False):
                     id='call',
                     lineno=step.lineno,
                     col_offset=step.col_offset,
-                    ctx=ast.Load()
-                )
+                    ctx=ast.Load())
 
-            return ast.Call(func=func_ast, col_offset=step.col_offset, lineno=step.lineno, args=list(), keywords=list())
+            return ast.Call(
+                func=func_ast,
+                col_offset=step.col_offset,
+                lineno=step.lineno,
+                args=list(),
+                keywords=list())
 
         elif type(condition) is bool:
             return _ast.Name(
                 id=str(condition),
                 lineno=step.lineno,
                 col_offset=step.col_offset,
-                ctx=ast.Load()
-            )
+                ctx=ast.Load())
 
     @log_invocation
     def _replace_condition(steps, context):
@@ -390,10 +408,12 @@ def replace_condition_with(condition=False):
                 step.test = build_replacement(step)
         return steps
 
-    if hasattr(condition, '__call__') and hasattr(condition, 'func_name') and condition.func_name != '<lambda>':
+    if hasattr(condition, '__call__') and hasattr(
+            condition, 'func_name') and condition.func_name != '<lambda>':
 
         return in_sequence([
-            insert_steps(0, "from %s import %s" % (condition.__module__, condition.func_name)),
+            insert_steps(0, "from %s import %s" % (condition.__module__,
+                                                   condition.func_name)),
             _replace_condition,
         ])
 
@@ -416,9 +436,17 @@ def replace_for_iterator_with(replacement=()):
                     elements = []
                     for i in replacement:
                         if type(i) in {int, long, float, complex}:
-                            elements.append(ast.Num(lineno=step.iter.lineno, col_offset=step.iter.col_offset, n=i))
+                            elements.append(
+                                ast.Num(
+                                    lineno=step.iter.lineno,
+                                    col_offset=step.iter.col_offset,
+                                    n=i))
                         elif type(i) is str:
-                            elements.append(ast.Str(lineno=step.iter.lineno, col_offset=step.iter.col_offset, s=i))
+                            elements.append(
+                                ast.Str(
+                                    lineno=step.iter.lineno,
+                                    col_offset=step.iter.col_offset,
+                                    s=i))
 
                     replacement_ast = ast.List(
                         lineno=step.iter.lineno,
@@ -466,6 +494,7 @@ def insert_steps(position, insert):
     :param insert: The inserted lines of code are represented as a single string.  Lines of code should be separated by
      a \n carriage return.
     """
+
     def _insert_steps(steps, context):
         fuzzer = replace_steps_with(position, position, insert)
         return fuzzer(steps, context)
@@ -474,7 +503,9 @@ def insert_steps(position, insert):
 
 
 def replace_steps_with_pass(steps, context):
-    fuzzer = replace_steps_with(replacement=ast.Pass(lineno=steps[0].lineno, col_offset=steps[0].lineno))
+    fuzzer = replace_steps_with(
+        replacement=ast.Pass(
+            lineno=steps[0].lineno, col_offset=steps[0].lineno))
     return fuzzer(steps, context)
 
 
@@ -503,8 +534,10 @@ def swap_if_blocks(steps, context):
 
 # Utility Fuzzers
 
+
 def remove_last_steps(n, reapply=False):
-    fuzzer = filter_steps(choose_last_steps(n, reapply), replace_steps_with_pass)
+    fuzzer = filter_steps(
+        choose_last_steps(n, reapply), replace_steps_with_pass)
     return fuzzer
 
 
