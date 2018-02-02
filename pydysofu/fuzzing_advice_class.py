@@ -5,18 +5,16 @@ A class used to represent fuzzing advice that pydysofu can consume.
 from core_fuzzers import identity
 from abc import ABCMeta, abstractmethod
 
-# def do_nothing(args):
-#     '''
-#     For clarity with the callbacks, because 'pass' doesn't go into a lambda.
-#     '''
-#     pass
-
 
 class Advice(metaclass=ABCMeta):
     def __init__(self, *args, **kwargs):
         self.fuzzing_advice = self.fuzzer(*args, **kwargs)
 
     def __call__(self, *args, **kwargs):
+        '''
+        Implemented so the class instance is `callable()` and can be
+        executed as if it was a traditional-style fuzzer.
+        '''
         self.fuzzing_advice(*args, **kwargs)
 
     @abstractmethod
@@ -42,4 +40,6 @@ def advice(advice_func):
 
     class AutomaticallyGeneratedAdvice(Advice):
         def fuzzer(self, *args, **kwargs):
-            advice_func(*args, **kwargs)
+            return advice_func(*args, **kwargs)
+
+    return AutomaticallyGeneratedAdvice() ## A (callable!) instance of the class
