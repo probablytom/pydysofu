@@ -20,6 +20,8 @@ import inspect
 
 from .find_lambda import find_lambda_ast
 from .config import pydysofu_random
+from .fuzzing_advice_class import FuzzingAdvice
+from functools import partial
 
 # Logging Machinery
 
@@ -60,6 +62,7 @@ def identity(steps, context):
     The identity fuzzer, which returns the provided steps.
     """
     return steps
+
 
 # Step Filtering Functions
 
@@ -554,3 +557,23 @@ def remove_random_step(steps, context):
 def duplicate_last_step(steps, context):
     fuzzer = filter_steps(choose_last_step, duplicate_steps)
     return fuzzer(steps, context)
+
+
+class FeedbackFuzzingAdvice(FuzzingAdvice):
+    '''
+    TODO: document
+    TODO: What exactly is the method for getting the values back out of the advice?
+           ...maybe there should be a namespace that acn be passed into both
+              the callback and the fuzzer...
+    '''
+
+    # TODO is the format of the args for a callback like this correct?
+    def history_catching_callback(self, func_id, res):
+        previous_history = self.previous_results.get(func_id, [])
+        previous_history.append(res)
+        self.previous_results[func_id] = previous_history
+
+    def __init__(self, *args, **kwargs):
+        self.previous_results = {}
+        self.__default_callback = self.history_catching_callback # TODO: correct approach?
+        super(*args, **kwargs)

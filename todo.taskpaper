@@ -1,0 +1,28 @@
+Implementing Callback functionality:
+
+    - Decide between two design decisions for implementing the callback functionality
+    The way I see it, there are two possibilities. The first is to implement it keeping
+    values in the context of the fuzzer; this is nice in a way, because we get to keep
+    the current fuzzer design (with composability and so on), and we potentially get to
+    mix-and-match callbacks and fuzzers as we like.
+    At the same time, I much prefer the idea of implementing this with classes which keep
+    fuzzers, callbacks, or pairs of the two, and where an instance of the class is what
+    keeps state available between the two (and anything in the future, also).
+    The object-oriented design also gives us the option to have functionality built in
+    that isn't related to the fuzzer *or* the callback, or additional functionality
+    that they might use. It's also easily extended. If we had a nice way to represent the
+    composition of fuzzers with the object-oriented design I wouldn't feel like we lost
+    anything, but we *do*.
+    Also, this affects how we *apply* the fuzzing and the callbacks. It's all connected.
+    I feel like the class-oriented option is a nicer design if we're writing something
+    which is descriptive about the behaviour it's modifying, because it couples together
+    the callback and the fuzzer (and any future functionality), and things are easily
+    extended, but composition etc. is a *must*.
+
+    Maybe the best way to go about this in the interim is to write it sharing information
+    around with the context, and to work on a better, less hack-y design later.
+
+    Fixed! The solution is to have fuzzing classes that *behave* like functions by having
+    an abstract base class they inherit from with a builtin __call__() method defined. Then
+    We still get the composition because we can treat the fuzzer instance as a function, and
+    it's technically `callable`!

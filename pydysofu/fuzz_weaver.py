@@ -86,7 +86,8 @@ def fuzz_clazz(clazz, advice):
                 exec_result = reference_function(self, *args, **kwargs)
 
                 # Run the callback function with the result
-                callback(exec_result)
+                # TODO is the format of the callback args correct?
+                callback(advice_key, exec_result)
 
                 # We're done; return.
                 return exec_result
@@ -110,7 +111,8 @@ def fuzz_clazz(clazz, advice):
                 exec_result = reference_function(*args, **kwargs)
 
                 # Run the callback with the result of execution
-                callback(exec_result)
+                # TODO is the format of the callback args correct?
+                callback(advice_key, exec_result)
 
                 # We're done; return.
                 return exec_result
