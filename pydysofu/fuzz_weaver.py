@@ -6,12 +6,11 @@ import ast
 import copy
 import inspect
 
-from core_fuzzers import identity, identity_instructions
+from core_fuzzers import identity
 
 from inspect import getmembers
 
 from workflow_transformer import WorkflowTransformer
-
 
 _reference_syntax_trees = dict()
 _reference_get_attributes = dict()
@@ -21,9 +20,11 @@ def get_reference_syntax_tree(func):
     if func not in _reference_syntax_trees:
         func_source_lines = inspect.getsourcelines(func)[0]
 
-        global_indentation = len(func_source_lines[0]) - len(func_source_lines[0].strip())
+        global_indentation = len(func_source_lines[0]) - len(
+            func_source_lines[0].strip())
         for i in range(len(func_source_lines)):
-            func_source_lines[i] = func_source_lines[i][global_indentation - 1:]
+            func_source_lines[i] = func_source_lines[i][
+                global_indentation - 1:]
 
         func_source = ''.join(func_source_lines)
         _reference_syntax_trees[func] = ast.parse(func_source)
@@ -40,7 +41,9 @@ def fuzz_function(reference_function, fuzzer=identity, context=None):
 
     # Compile the newly mutated function into a module, extract the mutated function code object and replace the
     # reference function's code object for this call.
-    compiled_module = compile(fuzzed_syntax_tree, inspect.getsourcefile(reference_function), 'exec')
+    compiled_module = compile(fuzzed_syntax_tree,
+                              inspect.getsourcefile(reference_function),
+                              'exec')
 
     reference_function.func_code = compiled_module.co_consts[0]
 
@@ -77,8 +80,7 @@ def fuzz_clazz(clazz, advice):
                 reference_function = attribute.im_func
                 # Ensure that advice key is unbound method for instance methods.
                 advice_key = getattr(attribute.im_class, attribute.func_name)
-                fuzzer = advice.get_fuzzer(advice_key)
-                callback = advice.get_callback(advice_key)
+                fuzzer = advice.get(advice_key, identity)
 
                 fuzz_function(reference_function, fuzzer, self)
 
@@ -87,7 +89,10 @@ def fuzz_clazz(clazz, advice):
 
                 # Run the callback function with the result
                 # TODO is the format of the callback args correct?
-                callback(advice_key, exec_result)
+                if "callback" in dir(fuzzer):
+                    # TODO: is the format of the callback args correct?
+                    #     ...Maybe we should pass `advice_key` also.
+                    fuzzer.callback(exec_result)
 
                 # We're done; return.
                 return exec_result
@@ -102,8 +107,7 @@ def fuzz_clazz(clazz, advice):
 
                 reference_function = attribute
                 advice_key = reference_function
-                fuzzer = advice.get_fuzzer(advice_key)
-                callback = advice.get_callback(advice_key)
+                fuzzer = advice.get(advice_key, identity)
 
                 fuzz_function(reference_function, fuzzer)
 
@@ -112,7 +116,8 @@ def fuzz_clazz(clazz, advice):
 
                 # Run the callback with the result of execution
                 # TODO is the format of the callback args correct?
-                callback(advice_key, exec_result)
+                if "callback" in dir(fuzzer):
+                    fuzzer.callback(exec_result)
 
                 # We're done; return.
                 return exec_result

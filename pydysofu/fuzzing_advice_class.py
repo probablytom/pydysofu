@@ -2,11 +2,11 @@
 A class used to represent fuzzing advice that pydysofu can consume.
 @author probablytom
 '''
-from core_fuzzers import identity
 from abc import ABCMeta, abstractmethod
+from future.utils import with_metaclass
 
 
-class Advice(metaclass=ABCMeta):
+class Advice:
     ''' A class which operates like a callable
     fuzzer from pydysofu. It can have internally held state (because it's just
     an object!) The fuzzer method represents the behaviour the advice
@@ -14,9 +14,10 @@ class Advice(metaclass=ABCMeta):
     TODO: extend this out to a full aspect oriented modelling
     framework. (Right now it's tied into fuzzing a bit...)
     '''
+
     def __init__(self, *args, **kwargs):
         '''
-        Unimportant boilerplate --- gets the advice function out of the fuzzer
+        Unimportant boilerplate --- gets the actual fuzzer out of the function
         '''
         self.fuzzing_advice = self.fuzzer(*args, **kwargs)
 
@@ -30,7 +31,6 @@ class Advice(metaclass=ABCMeta):
         '''
         self.fuzzing_advice(*args, **kwargs)
 
-    @abstractmethod
     def fuzzer(self, *args, **kwargs):
         '''
         The fuzzer function to implement by subclasses of this fuzzer class.
@@ -38,21 +38,20 @@ class Advice(metaclass=ABCMeta):
         pass
 
 
-class FeedbackAdvice(metaclass=Advice):
+class FeedbackAdvice:
     '''
     Sometimes, like in the case of genetic algorithms, we need to implement
     advice which has both fuzzing capabilities and a callback to catch the
     result of the fuzzing!
     FeedbackAdvice is a class to implement this.
     '''
-    @abstractmethod
+
     def fuzzer(self, *args, **kwargs):
         '''
         Fuzzers like the regular Advice class has (because this subclasses it)
         '''
-        super(FeedbackAdvice, self).fuzzer(*args, **kwargs)
+        super(FeedbackAdvice, self).fuzzer(self, *args, **kwargs)
 
-    @abstractmethod
     def callback(self, result):
         '''
         The callback that'll be fed the result of the fuzzed function.
@@ -60,14 +59,13 @@ class FeedbackAdvice(metaclass=Advice):
         pass
 
 
-class CallbackAdvice(metaclass=FeedbackAdvice):
-    def fuzzer(self, *args, **kwargs):
+class CallbackAdvice:
+    def fuzzer(self, steps, context):
         '''
         The associated fuzzer is just the identity.
         '''
-        return identity(*args, **kwargs)
+        return steps
 
-    @abstractmethod
     def callback(self, result):
         '''
         This still needs to be implemented by the subclass!
@@ -93,4 +91,4 @@ def advice(advice_func):
         def fuzzer(self, *args, **kwargs):
             return advice_func(*args, **kwargs)
 
-    return AutomaticallyGeneratedAdvice() ## A (callable!) instance of the class
+    return AutomaticallyGeneratedAdvice()  # A (callable) instance of the class
