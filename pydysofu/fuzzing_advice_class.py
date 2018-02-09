@@ -24,6 +24,16 @@ class Advice(metaclass=ABCMeta):
         pass
 
 
+class Callback(metaclass=ABCMeta):
+
+    @abstractmethod
+    def callback(self, *args, **kwargs):
+        pass
+
+    def __call__(self, *args, **kwargs):
+        self.callback(*args, **kwargs)
+
+
 class FeedbackAdvice(metaclass=Advice):
     @abstractmethod
     def fuzzer(self, *args, **kwargs):
