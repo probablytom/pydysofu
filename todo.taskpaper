@@ -26,3 +26,6 @@ Implementing Callback functionality:
     an abstract base class they inherit from with a builtin __call__() method defined. Then
     We still get the composition because we can treat the fuzzer instance as a function, and
     it's technically `callable`!
+
+Code Fixes
+    - Remvoe references to FuzziMoss from test library

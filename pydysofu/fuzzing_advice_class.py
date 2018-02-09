@@ -24,6 +24,9 @@ class Advice(metaclass=ABCMeta):
         '''
         Boilerplate to run the fuzzer like it an instance of this class
         *actually is just this function*.
+
+        Implemented so the class instance is `callable()` and can be
+        executed as if it was a traditional-style fuzzer.
         '''
         self.fuzzing_advice(*args, **kwargs)
 
@@ -88,4 +91,6 @@ def advice(advice_func):
 
     class AutomaticallyGeneratedAdvice(Advice):
         def fuzzer(self, *args, **kwargs):
-            advice_func(*args, **kwargs)
+            return advice_func(*args, **kwargs)
+
+    return AutomaticallyGeneratedAdvice() ## A (callable!) instance of the class
