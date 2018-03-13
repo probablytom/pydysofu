@@ -15,12 +15,6 @@ class Advice:
     framework. (Right now it's tied into fuzzing a bit...)
     '''
 
-    def __init__(self, *args, **kwargs):
-        '''
-        Unimportant boilerplate --- gets the actual fuzzer out of the function
-        '''
-        self.fuzzing_advice = self.fuzzer(*args, **kwargs)
-
     def __call__(self, *args, **kwargs):
         '''
         Boilerplate to run the fuzzer like it an instance of this class
@@ -29,7 +23,7 @@ class Advice:
         Implemented so the class instance is `callable()` and can be
         executed as if it was a traditional-style fuzzer.
         '''
-        self.fuzzing_advice(*args, **kwargs)
+        self.fuzzer(*args, **kwargs)
 
     def fuzzer(self, *args, **kwargs):
         '''

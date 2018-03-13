@@ -20,7 +20,7 @@ import inspect
 
 from .find_lambda import find_lambda_ast
 from .config import pydysofu_random
-from .fuzzing_advice_class import FeedbackAdvice
+from .fuzzing_advice_class import FeedbackAdvice, advice
 from functools import partial
 
 # Logging Machinery
@@ -57,6 +57,7 @@ def log_invocation(func):
 # Identity Fuzzer
 
 
+#@advice
 def identity(steps, context):
     """
     The identity fuzzer, which returns the provided steps.
@@ -210,6 +211,7 @@ def filter_context(fuzz_filters=[(lambda context: True, identity)]):
     associated fuzz operator is applied when the context filter returns True.
     """
 
+    @advice
     def _filter_context(steps, context):
 
         for fuzz_filter, fuzzer in fuzz_filters:
@@ -231,6 +233,7 @@ def filter_steps(fuzz_filter=choose_identity, fuzzer=identity):
     :param fuzzer: the fuzzer to apply to the filtered steps.
     """
 
+    @advice
     def _filter_steps(steps, context):
         regions = fuzz_filter(steps)
 
@@ -252,6 +255,7 @@ def in_sequence(sequence=()):
     :return : a fuzz operator that applies each of the supplied fuzz operators in sequence.
     """
 
+    @advice
     def _in_sequence(steps, context):
         for fuzzer in sequence:
             steps = fuzzer(steps, context)
@@ -269,6 +273,7 @@ def choose_from(distribution=(1.0, lambda x: x)):
     :returns : a fuzz operator selected at random from the supplied probability distribution.
     """
 
+    @advice
     def _choose_from(steps, context):
         total_weight = sum(map(lambda t: t[0], distribution))
 
@@ -291,6 +296,7 @@ def on_condition_that(condition, fuzzer):
     :returns: a fuzz operator that applies the underlying fuzz operator if the specified condition is satisfied.
     """
 
+    @advice
     def _on_condition_that(steps, context):
         if hasattr(condition, '__call__'):
             if condition():
@@ -315,6 +321,7 @@ def recurse_into_nested_steps(
     TryExcept and If).  Recursion is applied at the head, i.e. the fuzzer supplied is applied to the parent block last.
     """
 
+    @advice
     def _recurse_into_nested_steps(steps, context, depth=0):
         if depth <= max_depth:
             for step in steps:
@@ -404,6 +411,7 @@ def replace_condition_with(condition=False):
                 ctx=ast.Load())
 
     @log_invocation
+    @advice
     def _replace_condition(steps, context):
 
         for step in steps:
@@ -473,6 +481,7 @@ def replace_steps_with(start=0, end=None, replacement='pass'):
     """
 
     @log_invocation
+    @advice
     def _replace_steps(steps, context):
 
         finish = len(steps) if end is None else min(end, len(steps))
@@ -498,6 +507,7 @@ def insert_steps(position, insert):
      a \n carriage return.
     """
 
+    @advice
     def _insert_steps(steps, context):
         fuzzer = replace_steps_with(position, position, insert)
         return fuzzer(steps, context)
@@ -505,6 +515,7 @@ def insert_steps(position, insert):
     return _insert_steps
 
 
+@advice
 def replace_steps_with_pass(steps, context):
     fuzzer = replace_steps_with(
         replacement=ast.Pass(
@@ -513,11 +524,13 @@ def replace_steps_with_pass(steps, context):
 
 
 @log_invocation
+@advice
 def duplicate_steps(steps, context):
     return steps + copy.deepcopy(steps)
 
 
 @log_invocation
+@advice
 def shuffle_steps(steps, context):
     result = list(steps)
     pydysofu_random.shuffle(result)
@@ -525,6 +538,7 @@ def shuffle_steps(steps, context):
 
 
 @log_invocation
+@advice
 def swap_if_blocks(steps, context):
     for step in steps:
         if type(step) is If:
@@ -538,22 +552,26 @@ def swap_if_blocks(steps, context):
 # Utility Fuzzers
 
 
+@advice
 def remove_last_steps(n, reapply=False):
     fuzzer = filter_steps(
         choose_last_steps(n, reapply), replace_steps_with_pass)
     return fuzzer
 
 
+@advice
 def remove_last_step(steps, context):
     fuzzer = remove_last_steps(1)
     return fuzzer(steps, context)
 
 
+@advice
 def remove_random_step(steps, context):
     fuzzer = filter_steps(choose_random_steps(1), replace_steps_with_pass)
     return fuzzer(steps, context)
 
 
+@advice
 def duplicate_last_step(steps, context):
     fuzzer = filter_steps(choose_last_step, duplicate_steps)
     return fuzzer(steps, context)
