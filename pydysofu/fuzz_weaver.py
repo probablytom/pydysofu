@@ -18,7 +18,6 @@ _reference_get_attributes = dict()
 
 class FuzzingAspect:
     def __init__(self):
-        # TODO: should we pass in a fuzzer function here? Or have it written into each implementation of these aspect classes?
         self.victims = []
 
     def fuzzer(self, steps, context):
@@ -31,16 +30,20 @@ class FuzzingAspect:
         if attribute not in self.victims:
             self.apply_fuzzer(attribute, context)
 
-    def apply_fuzzer(self, attribute, context):
+    def encore(self, attribute, context, result):
+        pass
 
-        # TODO: when we make changes to the victims, are the changes reflected in this array, or does Python make a dereferenced copy?
+    def apply_fuzzer(self, attribute, context):
+        '''
+        Actually applies the fuzzer function in this Aspect to a victim attribute
+        TODO: when we make changes to the victims, are the changes reflected in this array, or does Python make a dereferenced copy?
+        '''
+
         if attribute not in self.victims:
             self.victims.append(attribute)
 
-        # Get the AST of the target function
+        # Get the AST of the target function and fuzz it
         ref_tree = get_reference_syntax_tree(attribute)
-
-        # Fuzz AST using target function
         fuzzed_tree = self.fuzzer(ref_tree, context)
 
         # Compile the fuzzed AST
@@ -49,7 +52,8 @@ class FuzzingAspect:
                                             'exec')
 
         # Replace the target function with the fuzzed one, taking care to remember what came before
-        # Notice that we can't do this the normal way, because we're already overwriting __get_attribute__! Probably best not to mess with it a second time.
+        # Notice that we can't do this the normal way, because we're already overwriting __get_attribute__!
+        # The alternative is to do this in a fuzz_clazz function.
         if not hasattr(attribute, "__code_history__"):
             attribute.__code_history__ = []
         attribute.__code_history__.append(attribute.__code__)
@@ -62,9 +66,6 @@ class FuzzingAspect:
     def reverse_all(self):
         for victim in self.victims:
             self.reverse_fuzzer(victim)
-
-    def encore(self, attribute, context, result):
-        pass
 
 
 def fuzzer(func):
