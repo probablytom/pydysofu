@@ -12,18 +12,54 @@ from inspect import getmembers
 
 from workflow_transformer import WorkflowTransformer
 
-
 _reference_syntax_trees = dict()
 _reference_get_attributes = dict()
+
+
+class FuzzingAspect:
+    def fuzzer(self, steps, context):
+        return steps
+
+    def prelude(self, attribute, context, *args, **kwargs):
+        '''
+        A prelude to the target function, which may do many things, but by default just fuzzes it.
+        '''
+        self.apply_fuzzer(attribute, context)
+
+    def apply_fuzzer(self, attribute, context):
+
+        # Get the AST of the target function
+        ref_tree = get_reference_syntax_tree(attribute)
+
+        # Fuzz AST using target function
+        fuzzed_tree = self.fuzzer(ref_tree, context)
+
+        # Compile the fuzzed AST
+        compiled_fuzzed_attribute = compile(fuzzed_tree,
+                                            inspect.getsourcefile(attribute),
+                                            'exec')
+
+        # Replace the target function with the fuzzed one, taking care to remember what came before
+        # Notice that we can't do this the normal way, because we're already overwriting __get_attribute__! Probably best not to mess with it a second time.
+        if not hasattr(attribute, "__code_history__"):
+            attribute.__code_history__ = []
+        attribute.__code_history__.append(attribute.__code__)
+
+        attribute.func_code = compiled_fuzzed_attribute.co_consts[0]
+
+    def encore(self, attribute, context, result):
+        pass
 
 
 def get_reference_syntax_tree(func):
     if func not in _reference_syntax_trees:
         func_source_lines = inspect.getsourcelines(func)[0]
 
-        global_indentation = len(func_source_lines[0]) - len(func_source_lines[0].strip())
+        global_indentation = len(func_source_lines[0]) - len(
+            func_source_lines[0].strip())
         for i in range(len(func_source_lines)):
-            func_source_lines[i] = func_source_lines[i][global_indentation - 1:]
+            func_source_lines[i] = func_source_lines[i][
+                global_indentation - 1:]
 
         func_source = ''.join(func_source_lines)
         _reference_syntax_trees[func] = ast.parse(func_source)
@@ -40,7 +76,9 @@ def fuzz_function(reference_function, fuzzer=identity, context=None):
 
     # Compile the newly mutated function into a module, extract the mutated function code object and replace the
     # reference function's code object for this call.
-    compiled_module = compile(fuzzed_syntax_tree, inspect.getsourcefile(reference_function), 'exec')
+    compiled_module = compile(fuzzed_syntax_tree,
+                              inspect.getsourcefile(reference_function),
+                              'exec')
 
     reference_function.func_code = compiled_module.co_consts[0]
 
