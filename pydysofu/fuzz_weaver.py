@@ -10,7 +10,7 @@ from core_fuzzers import identity
 
 from workflow_transformer import WorkflowTransformer
 
-from asp import weave_clazz, weave_module, unweave_class, unweave_all_classes, IdentityAspect
+from drawer import weave_clazz, weave_module, unweave_class, unweave_all_classes, IdentityAspect
 
 _reference_syntax_trees = dict()
 

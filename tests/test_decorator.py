@@ -202,6 +202,7 @@ class FuzziMossDecoratorTest(unittest.TestCase):
         fm.pydysofu_random.sample = Mock(side_effect=[[1]])
 
         self.target.mangled_function_remove_random_step()
+        self.target.mangled_function_remove_random_step()
         self.assertEqual([1, 3], self.environment)
 
     def test_remove__random_step_twice(self):
@@ -242,6 +243,7 @@ class FuzziMossDecoratorTest(unittest.TestCase):
         self.assertEqual([1, 2, 1, 2], self.environment)
 
     def test_in_sequence(self):
+        fm.set_fuzzer(ExampleWorkflow.mangled_function_in_sequence, identity)
         self.target.mangled_function_in_sequence()
         self.assertEqual([1], self.environment)
 
@@ -292,6 +294,26 @@ class FuzziMossDecoratorTest(unittest.TestCase):
         self.assertEquals(None, result)
         self.assertEquals(self.environment, [1, 2, 3])
 
+
+class TestHotswappingDecorator(unittest.TestCase):
+
+    def test_hotswapping_on_functions(self):
+        env = []
+        class T(object):
+            @fm.fuzz(duplicate_steps, label='arbitrary test')
+            def arbitrary_test(self, env):
+                env.append(1)
+                env.append(2)
+                env.append(3)
+
+        t = T()
+        t.arbitrary_test(env)
+        fm.set_fuzzer('arbitrary test', remove_last_steps(3))
+        old_env = copy.copy(env)
+        env = []
+        t.arbitrary_test(env)
+        self.assertEqual(len(old_env), 6)
+        self.assertEqual(len(env), 0)
 
 if __name__ == '__main__':
     unittest.main()
