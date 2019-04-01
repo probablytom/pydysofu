@@ -20,7 +20,7 @@ URL = 'http://probablytom.com/'
 EMAIL = 'w.wallis.1@research.gla.ac.uk'
 AUTHOR = 'Tom Wallis and Tim Storer'
 REQUIRES_PYTHON = '<3'
-VERSION = '0.1a1'
+VERSION = '0.1a2'
 EXCLUDABLES = ('venv','tests',)
 
 # What packages are required for this module to be executed?
